@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: "*/30 * * * *"   # every 30 min (~48 GNews requests/day, free plan allows 100)
+    - cron: "0 */2 * * *"   # every 2 hours: 6 requests x 12 runs = 72/day (free plan allows 100)
   workflow_dispatch:
 
 permissions:
@@ -26,6 +26,9 @@ jobs:
       - uses: actions/checkout@v5
       - name: Build site
         run: |
+          echo "Files in repo root:"; ls -la
+          [ -f index.html ] || { echo "::error title=Missing file::index.html not found in repo root"; exit 1; }
+          [ -f scripts/fetch-news.mjs ] || { echo "::error title=Missing file::scripts/fetch-news.mjs not found"; exit 1; }
           mkdir -p _site
           cp index.html _site/
           node scripts/fetch-news.mjs
