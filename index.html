@@ -66,6 +66,7 @@ h2{font-family:var(--serif);font-weight:400;font-size:clamp(28px,3.6vw,40px);let
 .meta{display:block;margin-top:6px;font-size:13px;color:var(--mute)}
 .empty{padding:28px 4px;color:var(--mute);border-bottom:1px solid var(--line)}
 @media(max-width:820px){.trend{grid-template-columns:1fr;gap:28px}.news-head{position:static}}
+.ntabs{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0 0}
 /* list */
 .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:28px}
 .tab{border:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;font-size:14px;padding:9px 18px;border-radius:999px;cursor:pointer;transition:background .2s}
@@ -119,7 +120,7 @@ footer .logo{font-size:17px}
 </div></section>
 
 <section id="trending"><div class="wrap trend">
-  <div class="news-head"><h2>Trending now.</h2><p class="sub">The 10 most talked-about headlines, refreshed every 30 minutes.</p><div class="note" id="upd"></div></div>
+  <div class="news-head"><h2>Trending now.</h2><p class="sub">Top stories in politics, economy, technology, science, and health. Refreshed every 2 hours.</p><div class="ntabs" id="ntabs" role="group" aria-label="News topics"></div><div class="note" id="upd"></div></div>
   <ol class="news-list" id="news"><li class="empty">Loading headlines…</li></ol>
 </div></section>
 
@@ -168,11 +169,14 @@ q.addEventListener("input",()=>{cur="All";apply()});
 document.querySelectorAll("[data-go]").forEach(t=>t.addEventListener("click",()=>{cur=t.dataset.go;q.value="";apply()}));
 
 (function(){
-const box=document.getElementById("news"),upd=document.getElementById("upd");
+const box=document.getElementById("news"),upd=document.getElementById("upd"),nt=document.getElementById("ntabs");
+const L={top:"Top",politics:"Politics",economy:"Economy",technology:"Technology",science:"Science",health:"Health"};
 const ago=t=>{const m=Math.max(1,Math.round((Date.now()-new Date(t))/6e4));return m<60?m+" min ago":m<1440?Math.round(m/60)+" h ago":Math.round(m/1440)+" d ago"};
-fetch("news.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(d=>{
+let D,cur="top";
+function show(){
   box.textContent="";
-  d.articles.slice(0,10).forEach((a,i)=>{
+  [...nt.children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===cur));
+  D.categories[cur].slice(0,10).forEach((a,i)=>{
     const li=document.createElement("li"),l=document.createElement("a");
     l.href=a.url;l.target="_blank";l.rel="noopener noreferrer";
     const r=document.createElement("span");r.className="rank";r.textContent=i+1;
@@ -180,6 +184,14 @@ fetch("news.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw 0;return r.json()}
     h.className="hl";h.textContent=a.title;m.className="meta";m.textContent=a.source+" · "+ago(a.publishedAt);
     w.append(h,m);l.append(r,w);li.append(l);box.append(li);
   });
+}
+fetch("news.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(d=>{
+  D=d;
+  Object.keys(L).filter(k=>d.categories[k]&&d.categories[k].length).forEach(k=>{
+    const b=document.createElement("button");b.className="tab";b.dataset.k=k;b.textContent=L[k];
+    b.onclick=()=>{cur=k;show()};nt.append(b);
+  });
+  show();
   upd.textContent="Updated "+ago(d.updated)+" · via GNews";
 }).catch(()=>{box.innerHTML='<li class="empty">Headlines are unavailable right now. Please check back soon.</li>'});
 })();
